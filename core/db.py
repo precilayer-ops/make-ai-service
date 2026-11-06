@@ -8,10 +8,12 @@ logger = logging.getLogger("make_ai_service.db")
 class DatabaseManager:
     def __init__(self):
         self.erp_client: Optional[AsyncIOMotorClient] = None
+        self.sc_client: Optional[AsyncIOMotorClient] = None
         self.mes_client: Optional[AsyncIOMotorClient] = None
         self.ai_client: Optional[AsyncIOMotorClient] = None
 
         self.erp_db: Optional[AsyncIOMotorDatabase] = None
+        self.sc_db: Optional[AsyncIOMotorDatabase] = None
         self.mes_db: Optional[AsyncIOMotorDatabase] = None
         self.ai_db: Optional[AsyncIOMotorDatabase] = None
 
@@ -29,7 +31,22 @@ class DatabaseManager:
                 self.erp_db = self.erp_client.get_default_database()
                 logger.info(f"Connected to ERP MongoDB database: {self.erp_db.name}")
 
-            # 2. MES Database (Read-only query pool)
+            # 2. SC (Supply Chain) Database (Read-only query pool for suppliers, RFQs, POs)
+            if settings.SC_MONGO_URI:
+                self.sc_client = AsyncIOMotorClient(
+                    settings.SC_MONGO_URI,
+                    maxPoolSize=20,
+                    minPoolSize=2,
+                    serverSelectionTimeoutMS=5000,
+                )
+                try:
+                    self.sc_db = self.sc_client.get_default_database()
+                except Exception:
+                    default_sc_name = "ndcs-sc-local" if "ndcs" in settings.INSTANCE_NAME.lower() else "pipl-sc-local"
+                    self.sc_db = self.sc_client[default_sc_name]
+                logger.info(f"Connected to SC MongoDB database: {self.sc_db.name}")
+
+            # 3. MES Database (Read-only query pool)
             if settings.MES_MONGO_URI:
                 self.mes_client = AsyncIOMotorClient(
                     settings.MES_MONGO_URI,
@@ -62,6 +79,8 @@ class DatabaseManager:
         """Close all connection pools."""
         if self.erp_client:
             self.erp_client.close()
+        if self.sc_client:
+            self.sc_client.close()
         if self.mes_client:
             self.mes_client.close()
         if self.ai_client:

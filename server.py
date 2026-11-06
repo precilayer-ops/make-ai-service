@@ -55,6 +55,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 async def health_check():
     """Health check endpoint reporting connectivity to DBs and AI client."""
     erp_connected = db_manager.erp_db is not None
+    sc_connected = db_manager.sc_db is not None
     mes_connected = db_manager.mes_db is not None
     gemini_ready = gemini_manager.client is not None
 
@@ -65,6 +66,7 @@ async def health_check():
         "port": settings.PORT,
         "services": {
             "erp_database": "connected" if erp_connected else "disconnected",
+            "sc_database": "connected" if sc_connected else "disconnected",
             "mes_database": "connected" if mes_connected else "disconnected",
             "gemini_api": "ready" if gemini_ready else "key_missing_or_uninitialized",
             "quaoar_url": settings.QUAOAR_URL

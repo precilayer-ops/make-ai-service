@@ -43,6 +43,7 @@ class Settings(BaseSettings):
 
     # Database URIs
     ERP_MONGO_URI: str = "mongodb://localhost:27017/erp?readPreference=secondaryPreferred"
+    SC_MONGO_URI: Optional[str] = "mongodb://localhost:27017/sc?readPreference=secondaryPreferred"
     MES_MONGO_URI: str = "mongodb://localhost:27017/mes?readPreference=secondaryPreferred"
     AI_CHAT_MONGO_URI: str = "mongodb://localhost:27017/ai_service"
 
