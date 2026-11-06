@@ -25,18 +25,26 @@ class GeminiManager:
 
     @property
     def client(self):
-        """Lazy initialization of Google GenAI Client."""
-        if self._client is None and self.is_configured():
-            try:
-                from google import genai
-                self._client = genai.Client(api_key=settings.GEMINI_API_KEY)
-                logger.info("Initialized Google GenAI client.")
-            except ImportError:
-                logger.error("google-genai package not installed. Run: pip install google-genai")
-                return None
-            except Exception as e:
-                logger.error(f"Failed to initialize Gemini client: {e}")
-                return None
+        """Lazy initialization of Google GenAI Client with active event loop binding."""
+        import asyncio
+        try:
+            current_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            current_loop = None
+
+        if self._client is None or getattr(self, "_loop", None) != current_loop:
+            if self.is_configured():
+                try:
+                    from google import genai
+                    self._client = genai.Client(api_key=settings.GEMINI_API_KEY)
+                    self._loop = current_loop
+                    logger.info("Initialized Google GenAI client with active event loop.")
+                except ImportError:
+                    logger.error("google-genai package not installed. Run: pip install google-genai")
+                    return None
+                except Exception as e:
+                    logger.error(f"Failed to initialize Gemini client: {e}")
+                    return None
         return self._client
 
     def prepare_contents(

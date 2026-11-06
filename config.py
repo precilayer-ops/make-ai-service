@@ -3,16 +3,21 @@ from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
 def get_env_file() -> str:
     """Determine which .env file to load based on INSTANCE or NODE_ENV."""
     env = os.getenv("INSTANCE", os.getenv("NODE_ENV", "local")).lower()
     if "pipl" in env:
-        return ".env.pipl"
+        target = os.path.join(BASE_DIR, ".env.pipl")
     elif "ndcs" in env:
-        return ".env.ndcs"
-    elif os.path.exists(".env"):
-        return ".env"
-    return ".env.example"
+        target = os.path.join(BASE_DIR, ".env.ndcs")
+    else:
+        target = os.path.join(BASE_DIR, ".env")
+        if not os.path.exists(target):
+            target = os.path.join(BASE_DIR, ".env.example")
+    return target
 
 
 class Settings(BaseSettings):
@@ -31,7 +36,7 @@ class Settings(BaseSettings):
 
     # Google Gemini AI
     GEMINI_API_KEY: str = ""
-    GEMINI_FLASH_MODEL: str = "gemini-2.5-flash"
+    GEMINI_FLASH_MODEL: str = "gemini-3.5-flash"
     GEMINI_PRO_MODEL: str = "gemini-2.5-pro"
 
     # AWS Credentials
