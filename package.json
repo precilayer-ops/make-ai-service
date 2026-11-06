@@ -4,10 +4,10 @@
   "description": "Manufacturing AI Microservice for 3D CAD Costing, 2D PDF Blueprint Intelligence, and Operations Q&A",
   "main": "server.py",
   "scripts": {
-    "start": "python server.py",
-    "start:pipl": "uvicorn server:app --host 0.0.0.0 --port 4006 --reload",
-    "start:ndcs": "uvicorn server:app --host 0.0.0.0 --port 4007 --reload",
-    "dev": "uvicorn server:app --host 0.0.0.0 --port 4006 --reload",
+    "start": "node run.js pipl",
+    "start:pipl": "node run.js pipl",
+    "start:ndcs": "node run.js ndcs",
+    "dev": "node run.js pipl",
     "test": "python tests/test_chat_stream.py"
   },
   "keywords": [

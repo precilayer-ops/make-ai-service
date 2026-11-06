@@ -120,6 +120,61 @@ def test_chat_stream_get_test():
         print("  [OK] GET SSE test endpoint passed!")
 
 
+def test_conversation_lifecycle():
+    print("\n[6/6] Testing Full Conversation Lifecycle (Create, List, Rename, Stream Message, History, Delete) ...")
+    with TestClient(app) as client:
+        # 1. Create conversation
+        create_res = client.post("/api/v1/ai/conversations", json={"title": "CNC Quote Chat"})
+        assert create_res.status_code == 201, f"Expected 201, got {create_res.status_code}"
+        conv = create_res.json()
+        conv_id = conv["id"]
+        assert conv["title"] == "CNC Quote Chat"
+        print(f"  [OK] Created conversation ID: {conv_id}")
+
+        # 2. List conversations
+        list_res = client.get("/api/v1/ai/conversations")
+        assert list_res.status_code == 200
+        conv_list = list_res.json()
+        assert any(c["id"] == conv_id for c in conv_list)
+        print(f"  [OK] Listed conversations (found {len(conv_list)} conversations)")
+
+        # 3. Rename conversation
+        rename_res = client.patch(f"/api/v1/ai/conversations/{conv_id}", json={"title": "Updated CNC Chat"})
+        assert rename_res.status_code == 200
+        assert rename_res.json()["title"] == "Updated CNC Chat"
+        print("  [OK] Renamed conversation to 'Updated CNC Chat'")
+
+        # 4. Send message and read SSE stream
+        msg_stream_res = client.post(
+            f"/api/v1/ai/conversations/{conv_id}/messages",
+            json={"content": "Can we machine SS316 with 0.02mm tolerance?"}
+        )
+        assert msg_stream_res.status_code == 200
+        assert "text/event-stream" in msg_stream_res.headers.get("content-type", "")
+
+        streamed_chunks = []
+        for line in msg_stream_res.iter_lines():
+            line = line.strip()
+            if line.startswith("data: "):
+                streamed_chunks.append(json.loads(line[6:]))
+        assert len(streamed_chunks) > 0
+        print(f"  [OK] Streamed response in conversation ({len(streamed_chunks)} chunks)")
+
+        # 5. Fetch conversation details & check persisted messages
+        detail_res = client.get(f"/api/v1/ai/conversations/{conv_id}")
+        assert detail_res.status_code == 200
+        detail = detail_res.json()
+        assert len(detail["messages"]) >= 2  # user message + assistant reply
+        assert detail["messages"][0]["role"] == "user"
+        assert detail["messages"][1]["role"] == "model"
+        print(f"  [OK] Conversation history persisted verified ({len(detail['messages'])} messages)")
+
+        # 6. Delete conversation
+        del_res = client.delete(f"/api/v1/ai/conversations/{conv_id}")
+        assert del_res.status_code == 200
+        print("  [OK] Conversation deleted successfully")
+
+
 if __name__ == "__main__":
     print("=" * 65)
     print("RUNNING MAKE AI SERVICE INTEGRATION TEST SUITE")
@@ -129,6 +184,7 @@ if __name__ == "__main__":
     test_chat_non_streaming()
     test_chat_stream()
     test_chat_stream_get_test()
+    test_conversation_lifecycle()
     print("\n" + "=" * 65)
-    print("ALL 5 TESTS PASSED SUCCESSFULLY!")
+    print("ALL 6 TESTS PASSED SUCCESSFULLY!")
     print("=" * 65)

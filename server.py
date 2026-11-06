@@ -1,7 +1,9 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from config import settings
 from core.db import db_manager
 from core.gemini_client import gemini_manager
@@ -43,6 +45,11 @@ app.add_middleware(
 
 # Mount API v1 routes (/api/v1/ai/...)
 app.include_router(api_v1_router)
+
+# Mount static uploads directory for blueprints, drawings, and CAD previews
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 @app.get("/health")
 async def health_check():
