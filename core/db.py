@@ -48,7 +48,11 @@ class DatabaseManager:
                     minPoolSize=2,
                     serverSelectionTimeoutMS=5000,
                 )
-                self.ai_db = self.ai_client.get_default_database()
+                try:
+                    self.ai_db = self.ai_client.get_default_database()
+                except Exception:
+                    default_db_name = "ndcs-ai-service-local" if "ndcs" in settings.INSTANCE_NAME.lower() else "pipl-ai-service-local"
+                    self.ai_db = self.ai_client[default_db_name]
                 logger.info(f"Connected to AI Chat MongoDB database: {self.ai_db.name}")
 
         except Exception as e:
